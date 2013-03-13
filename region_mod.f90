@@ -1588,10 +1588,10 @@ contains
 !         call minimize_brent_savevals(parlow, parhigh, maxpoint, chisqmin, & 
 !            & get_single_pixel_chisq_singlepar, state, parvals, lnLvals, & 
 !            & currsize)
-         !We start by checking if the upper and lower priors are actually
-         !max-like points. In that case, we won't call minimize_brent.
-         dumchisq = get_single_pixel_chisq_singlepar(prior_low(component), state)
-         dumchisq2 = get_single_pixel_chisq_singlepar(prior_low(component) + 1d-4)
+!         !We start by checking if the upper and lower priors are actually
+!         !max-like points. In that case, we won't call minimize_brent.
+!         dumchisq = get_single_pixel_chisq_singlepar(prior_low(component), state)
+!         dumchisq2 = get_single_pixel_chisq_singlepar(prior_low(component) + 1d-4)
          
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_single_pixel_chisq_singlepar, state)
@@ -1604,40 +1604,41 @@ contains
          call add_to_vals(maxpoint, 1.d0, parvals, lnLvals, currsize)
          delta = min(0.0001, 0.01 * abs(maxpoint))
          lnL = get_single_pixel_like_singlepar(maxpoint - delta, state, lnL0)
-         call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
          do while (lnL < 1.d-5)
             delta = 0.5d0 * delta
             lnL = get_single_pixel_like_singlepar(maxpoint - delta, state, lnL0)
-            call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
          end do
          do while (lnL > 1.d-5)
+            call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
             delta = 2.d0 * delta
             lnL = get_single_pixel_like_singlepar(maxpoint - delta, state, lnL0)
-            call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
+!            call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
          end do
          int_low = maxpoint - delta
          if (int_low < prior_low(component)) then
             int_low = prior_low(component)
+            lnL = get_single_pixel_like_singlepar(int_low, state, lnL0)
          end if
+         call add_to_vals(int_low, lnL, parvals, lnLvals, currsize)
          print *, 'int_low', int_low
          !Upper boundary
          delta = min(0.0001, 0.01 * abs(maxpoint))
          lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
-         call add_to_vals(maxpoint+delta, lnL, parvals, lnLvals, currsize)
          do while (lnL < 1.d-5)
             delta = 0.5d0 * delta
             lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
-            call add_to_vals(maxpoint+delta, lnL, parvals, lnLvals, currsize)
          end do
          do while (lnL > 1.d-5)
+            call add_to_vals(maxpoint+delta, lnL, parvals, lnLvals, currsize)
             delta = 2.d0 * delta
             lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
-            call add_to_vals(maxpoint+delta, lnL, parvals, lnLvals, currsize)
          end do
          int_high = maxpoint + delta
          if (int_high > prior_high(component)) then
             int_high = prior_high(component)
+            lnL = get_single_pixel_like_singlepar(int_high, state, lnL0)
          end if
+         call add_to_vals(int_high, lnL, parvals, lnLvals, currsize)
          print *, 'int_high', int_high
          limits(1) = int_low
          limits(2) = int_high
@@ -1658,42 +1659,42 @@ contains
 
          delta = min(0.0001, 0.01 * abs(maxpoint))
          lnL = get_region_like_singlepar(maxpoint-delta, state, lnL0)
-         call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
          do while (lnL < 1.d-5)
             delta = 0.5d0 * delta
             lnL = get_region_like_singlepar(maxpoint - delta, state, lnL0)
-            call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
          end do
          do while (lnL > 1.d-5)
+            call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
             delta = 2.d0 * delta
             lnL = get_region_like_singlepar(maxpoint - delta, state, lnL0)
-            call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
          end do
          int_low = maxpoint - delta
          if (int_low < prior_low(component)) then
             int_low = prior_low(component)
+            lnL = get_region_like_singlepar(int_low, state, lnL0)
          end if
+         call add_to_vals(int_low, lnL, parvals, lnLvals, currsize)
          print *, 'int_low_region', int_low
          !Upper boundary
 
          delta = min(0.0001, 0.01 * abs(maxpoint))
          lnL = get_region_like_singlepar(maxpoint + delta, state, lnL0)
-         call add_to_vals(maxpoint+delta, lnL, parvals, lnLvals, currsize)
          do while (lnL < 1.d-5)
             delta = 0.5d0 * delta
             lnL = get_region_like_singlepar(maxpoint + delta, state, lnL0)
-            call add_to_vals(maxpoint+delta, lnL, parvals, lnLvals, currsize)
          end do
          do while (lnL > 1.d-5)
+            call add_to_vals(maxpoint+delta, lnL, parvals, lnLvals, currsize)
             delta = 2.d0 * delta
             lnL = get_region_like_singlepar(maxpoint + delta, state, lnL0)
-            call add_to_vals(maxpoint+delta, lnL, parvals, lnLvals, currsize)
          end do
          int_high = maxpoint + delta
          if (int_high > prior_high(component)) then
             int_high = prior_high(component)
+            lnL = get_region_like_singlepar(int_high, state, lnL0)
          end if
          print *, 'int_high_region', int_high
+         call add_to_vals(int_high, lnL, parvals, lnLvals, currsize)
          limits(1) = int_low
          limits(2) = int_high
          call spline_int_refine(get_region_like_singlepar, int_low, int_high, state, lnL0, err, parvals, lnLvals, currsize, intres)
