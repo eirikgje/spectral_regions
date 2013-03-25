@@ -576,7 +576,7 @@ contains
          call pop(available_region_numbers(component), & 
             & pixel_curr_region(pixel, component))
          reg_prop = pixel_curr_region(pixel, component)
-         print *, 'reg_prop', reg_prop
+!         print *, 'reg_prop', reg_prop
          if (size(region, 1) < reg_prop) then
             allocate(region_temp(size(region, 1), num_components))
             do j = 1, num_components
@@ -769,85 +769,13 @@ contains
 !      parhigh = initpar(component) + initdisp(component)
 
 
-      call get_maxpoint_and_splinedint(1, pixel_lnL_state, maxlikepoint, res)
+      call get_maxpoint_and_qrombint(1, pixel_lnL_state, maxlikepoint, res)
 
       !Commented out
-!
-!
-!      !NEW: Try to use priors as boundaries, so that the whole area is searched
-!      !- could be helpful when there are several minima on the range
-!      parlow = prior_low(component)
-!      parhigh = prior_high(component)
-!!      print *, 'component', component
-!!      print *, 'parlow, parhigh', parlow, parhigh
-!      call minimize_brent(parlow, parhigh, parmin, chisqmin, & 
-!         & get_single_pixel_chisq_singlepar, pixel_lnL_state)
-!      print *, 'brentres', parmin
-!      maxlikepoint = parmin
-!      !Find boundaries given the maximum point
-!      !dlnL = 20.d0
-!      lnL0 = -0.5d0 * chisqmin
-!      delta = min(0.0001, 0.01 * abs(parmin))
-!      !lnL = -0.5d0 * get_single_pixel_chisq_singlepar(parmin - delta, pixel_lnL_state)
-!      lnL = get_single_pixel_like_singlepar(parmin - delta, pixel_lnL_state, lnL0)
-!      do while (lnL < 1.d-5)
-!         delta = 0.5d0 * delta
-!         lnL = get_single_pixel_like_singlepar(parmin - delta, pixel_lnL_state, lnL0)
-!      end do
-!      do while (lnL > 1.d-5)
-!         delta = 2.d0 * delta
-!!         lnL = -0.5d0 * get_single_pixel_chisq_singlepar(parmin - delta, pixel_lnL_state)
-!         lnL = get_single_pixel_like_singlepar(parmin - delta, pixel_lnL_state, lnL0)
-!      end do
-!      int_low = parmin - delta
-!      if (int_low < prior_low(component)) then
-!         int_low = prior_low(component)
-!      end if
-!      print *, 'int_low', int_low
-!      !Upper boundary
-!      delta = min(0.0001, 0.01 * abs(parmin))
-!!      lnL = -0.5d0 * get_single_pixel_chisq_singlepar(parmin + delta, pixel_lnL_state)
-!      lnL = get_single_pixel_like_singlepar(parmin + delta, pixel_lnL_state, lnL0)
-!      do while (lnL < 1.d-5)
-!         delta = 0.5d0 * delta
-!         lnL = get_single_pixel_like_singlepar(parmin + delta, pixel_lnL_state, lnL0)
-!      end do
-!
-!      do while (lnL > 1.d-5)
-!         delta = 2.d0 * delta
-!         lnL = get_single_pixel_like_singlepar(parmin + delta, pixel_lnL_state, lnL0)
-!      end do
-!      int_high = parmin + delta
-!      if (int_high > prior_high(component)) then
-!         int_high = prior_high(component)
-!      end if
-!      print *, 'int_high', int_high
-!      limits(1) = int_low
-!      limits(2) = int_high
-!
-!      !Now, do the romberg integration
-!      res = qromb(get_single_pixel_like, int_low, int_high, pixel_lnL_state, lnL0, err)
-!      if (err) then
-!         call output_likelihood(prior_low(component), prior_high(component), 1000, get_single_pixel_like, pixel_lnL_state, lnL0)
-!         call output_maps(1000)
-!         write(*,*) 'Error in qromb - too many steps'
-!         write(*,*) 'Error was in single_pixel_like'
-!         write(*,*) 'pixel: ', pixel
-!         write(*,*) 'component:', component
-!         write(*,*) 'Current regions for this pixel:', & 
-!            & pixel_curr_region(pixel, :)
-!         write(*,*) 'Current parameters for this pixel: '
-!         do i = 1, num_components
-!            write(*,*) 'Component ', i, ':'
-!            write(*,*)  region(pixel_curr_region(pixel, i), i)%param
-!         end do
-!         write(*,*) 'Data values for this pixel: ', dat(:, pixel)
-!         stop
-!      end if
-!      get_pixel_marginalised_likelihood = log(res) + lnL0 - log(int_high - int_low)
+
       get_pixel_marginalised_likelihood = res
 
-      print *, 'pix_marglike', get_pixel_marginalised_likelihood
+!      print *, 'pix_marglike', get_pixel_marginalised_likelihood
 
    end function get_pixel_marginalised_likelihood
 
@@ -905,94 +833,10 @@ contains
          return
       end if
 
-      call get_maxpoint_and_splinedint(2, region_lnL_state, maxlikepoint, res)
+      call get_maxpoint_and_qrombint(2, region_lnL_state, maxlikepoint, res)
 
-      !Commented out
-      !This routine should only be called with existing regions, so we can take
-      !initial bracketing guesses from the region-info datatype
-!      parlow = region(region_num, component)%param_bounds(1)
-!!      parhigh = region(region_num, component)%param_bounds(2)
-!      !Try with priors instead
-!      parlow = prior_low(component)
-!      parhigh = prior_high(component)
-!      call minimize_brent(parlow, parhigh, parmin, chisqmin, & 
-!         & get_region_chisq_singlepar, region_lnL_state)
-!      maxlikepoint = parmin
-!      print *, 'brentres_region', parmin
-!      !Find boundaries given the maximum point
-!!      dlnL = 20.d0
-!      lnL0 = -0.5d0 * chisqmin
-!      delta = min(0.0001, 0.01 * abs(parmin))
-!!      lnL = -0.5d0 * get_region_chisq_singlepar(parmin - delta, region_lnL_state)
-!      lnL = get_region_like_singlepar(parmin-delta, region_lnL_state, lnL0)
-!      do while (lnL < 1.d-5)
-!         delta = 0.5d0 * delta
-!         lnL = get_region_like_singlepar(parmin - delta, region_lnL_state, lnL0)
-!      end do
-!      do while (lnL > 1.d-5)
-!         delta = 2.d0 * delta
-!!         print *, 'delta', delta
-!         lnL = get_region_like_singlepar(parmin - delta, region_lnL_state, lnL0)
-!!         print *, 'lnL', lnL
-!!         print *, 'parmin - delta', parmin - delta
-!      end do
-!!      end do
-!      int_low = parmin - delta
-!      if (int_low < prior_low(component)) then
-!         int_low = prior_low(component)
-!      end if
-!      print *, 'int_low_region', int_low
-!      !Upper boundary
-!!      call output_likelihood(-70.d0, 70.d0, 1000, get_region_chisq_singlepar,region_lnL_state)
-!!      stop
-!
-!      delta = min(0.0001, 0.01 * abs(parmin))
-!      lnL = get_region_like_singlepar(parmin + delta, region_lnL_state, lnL0)
-!!      lnL = -0.5d0 * get_region_chisq_singlepar(parmin + delta, region_lnL_state)
-!!      do while (lnL0 - lnL < dlnL)
-!      do while (lnL < 1.d-5)
-!         delta = 0.5d0 * delta
-!         lnL = get_region_like_singlepar(parmin + delta, region_lnL_state, lnL0)
-!      end do
-!      do while (lnL > 1.d-5)
-!         delta = 2.d0 * delta
-!         lnL = get_region_like_singlepar(parmin + delta, region_lnL_state, lnL0)
-!      end do
-!      int_high = parmin + delta
-!      if (int_high > prior_high(component)) then
-!         int_high = prior_high(component)
-!      end if
-!      print *, 'int_high_region', int_high
-!      limits(1) = int_low
-!      limits(2) = int_high
-!
-!      !Now, do the romberg integration
-!      res = qromb(get_region_like, int_low, int_high, region_lnL_state, lnL0, err)
-!!      print *, 'postqromb'
-!      if (err) then
-!         call output_likelihood(prior_low(component), prior_high(component), 1000, get_region_like, region_lnL_state, lnL0)
-!         call output_maps(1000)
-!         write(*,*) 'Error in qromb - too many steps'
-!         write(*,*) 'Error was in get_region_like'
-!         write(*,*) 'Region: ', region_num
-!         write(*,*) 'component:', component
-!         write(*,*) 'pix_sub:', pix_sub
-!         write(*,*) 'pix_add:', pix_add
-!         write(*,*) 'Current parameter for this region: ', &
-!            & region(region_num, component)%param
-!!         do i = 1, num_components
-!!            write(*,*) 'Component ', i, ':'
-!!            write(*,*)  region(region_num, i)%param
-!!         end do
-!         write(*,*) 'Current number of pixels in this region: ', & 
-!            & region(region_num, component)%num_pix
-!!         write(*,*) 'Data values for this pixel: ' dat(:, pixel)
-!         stop
-!      end if
-!
-!      get_region_marginalised_likelihood = log(res) + lnL0 - log(int_high-int_low)
       get_region_marginalised_likelihood = res
-      print *, 'reg_marglike', get_region_marginalised_likelihood
+!      print *, 'reg_marglike', get_region_marginalised_likelihood
 
    end function get_region_marginalised_likelihood
 
@@ -1011,7 +855,6 @@ contains
       component = region_state(2)
       pix_sub = region_state(3)
       pix_add = region_state(4)
-
 
       pix_state(2) = component
 
@@ -1557,6 +1400,125 @@ contains
 
    end subroutine output_likelihood_dp
 
+   subroutine get_maxpoint_and_qrombint(mode, state, maxpoint, intres)
+      implicit none
+      integer(i4b), intent(in)  :: mode
+      integer(i4b), intent(in), dimension(:)    :: state
+      real(dp), intent(out)     :: maxpoint
+      real(dp), intent(out)     :: intres
+
+      real(dp), allocatable, dimension(:)       :: parvals, lnLvals
+      integer(i4b)      :: currsize, component, i
+      real(dp)  :: parlow, parhigh, lnL0, chisqmin, delta, lnL
+      real(dp)  :: int_low, int_high
+      real(dp), dimension(2)    :: limits
+      real(dp)  :: dumchisq, dumchisq2
+      logical(lgt)      :: err
+
+      !This holds whether it is a pixel or region likelihood
+      component = state(2)
+      parlow = prior_low(component)
+      parhigh = prior_high(component)
+
+      if (mode == 1) then
+         !Single pixel-likelihood
+!         !We start by checking if the upper and lower priors are actually
+!         !max-like points. In that case, we won't call minimize_brent.
+         
+         call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
+            & get_single_pixel_chisq_singlepar, state)
+
+         lnL0 = -0.5d0 * chisqmin
+         delta = min(0.0001, 0.01 * abs(maxpoint))
+         lnL = get_single_pixel_like_singlepar(maxpoint - delta, state, lnL0)
+         do while (lnL < 1.d-5)
+            delta = 0.5d0 * delta
+            lnL = get_single_pixel_like_singlepar(maxpoint - delta, state, lnL0)
+         end do
+         do while (lnL > 1.d-5)
+            delta = 2.d0 * delta
+            lnL = get_single_pixel_like_singlepar(maxpoint - delta, state, lnL0)
+         end do
+         int_low = maxpoint - delta
+         if (int_low < prior_low(component)) then
+            int_low = prior_low(component)
+         end if
+!         print *, 'int_low', int_low
+         !Upper boundary
+         delta = min(0.0001, 0.01 * abs(maxpoint))
+         lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
+         do while (lnL < 1.d-5)
+            delta = 0.5d0 * delta
+            lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
+         end do
+         do while (lnL > 1.d-5)
+            delta = 2.d0 * delta
+            lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
+         end do
+         int_high = maxpoint + delta
+         if (int_high > prior_high(component)) then
+            int_high = prior_high(component)
+         end if
+!         print *, 'int_high', int_high
+         limits(1) = int_low
+         limits(2) = int_high
+         intres =  qromb(get_single_pixel_like, int_low, int_high, &
+            & state, lnL0, err)
+
+      else if (mode == 2) then
+         !Region-likelihood
+         call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
+            & get_region_chisq_singlepar, state)
+!         print *, 'brentres_region', maxpoint
+         lnL0 = -0.5d0 * chisqmin
+
+         delta = min(0.0001, 0.01 * abs(maxpoint))
+         lnL = get_region_like_singlepar(maxpoint-delta, state, lnL0)
+         do while (lnL < 1.d-5)
+            delta = 0.5d0 * delta
+            lnL = get_region_like_singlepar(maxpoint - delta, state, lnL0)
+         end do
+         do while (lnL > 1.d-5)
+            delta = 2.d0 * delta
+            lnL = get_region_like_singlepar(maxpoint - delta, state, lnL0)
+         end do
+         int_low = maxpoint - delta
+         if (int_low < prior_low(component)) then
+            int_low = prior_low(component)
+         end if
+!         print *, 'int_low_region', int_low
+         !Upper boundary
+
+         delta = min(0.0001, 0.01 * abs(maxpoint))
+         lnL = get_region_like_singlepar(maxpoint + delta, state, lnL0)
+         do while (lnL < 1.d-5)
+            delta = 0.5d0 * delta
+            lnL = get_region_like_singlepar(maxpoint + delta, state, lnL0)
+         end do
+         do while (lnL > 1.d-5)
+            delta = 2.d0 * delta
+            lnL = get_region_like_singlepar(maxpoint + delta, state, lnL0)
+         end do
+         int_high = maxpoint + delta
+         if (int_high > prior_high(component)) then
+            int_high = prior_high(component)
+            lnL = get_region_like_singlepar(int_high, state, lnL0)
+         end if
+!         print *, 'int_high_region', int_high
+         limits(1) = int_low
+         limits(2) = int_high
+         !Normalize relative to parameter space
+         intres = qromb(get_region_like, int_low, int_high, state, lnL0, &
+            & err)
+      end if
+      if (isnan(intres)) stop
+!      print *, 'intres', intres
+!      print *, 'logintres', log(intres)
+!      print *, 'lnl0', lnL0
+!      print *, 'loginthighintlow', log(int_high - int_low)
+      intres = log(intres) + lnL0 - log(int_high - int_low)
+   end subroutine get_maxpoint_and_qrombint
+
    subroutine get_maxpoint_and_splinedint(mode, state, maxpoint, intres)
       implicit none
       integer(i4b), intent(in)  :: mode
@@ -1596,7 +1558,7 @@ contains
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_single_pixel_chisq_singlepar, state)
 
-         print *, 'currsize', currsize
+!         print *, 'currsize', currsize
          lnL0 = -0.5d0 * chisqmin
          do i = 1, currsize
             lnLvals(i) = exp(-0.5d0 * lnLvals(i) - lnL0)
@@ -1620,7 +1582,7 @@ contains
             lnL = get_single_pixel_like_singlepar(int_low, state, lnL0)
          end if
          call add_to_vals(int_low, lnL, parvals, lnLvals, currsize)
-         print *, 'int_low', int_low
+!         print *, 'int_low', int_low
          !Upper boundary
          delta = min(0.0001, 0.01 * abs(maxpoint))
          lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
@@ -1639,7 +1601,7 @@ contains
             lnL = get_single_pixel_like_singlepar(int_high, state, lnL0)
          end if
          call add_to_vals(int_high, lnL, parvals, lnLvals, currsize)
-         print *, 'int_high', int_high
+!         print *, 'int_high', int_high
          limits(1) = int_low
          limits(2) = int_high
          call spline_int_refine(get_single_pixel_like_singlepar, int_low, int_high, state, lnL0, err, parvals, lnLvals, currsize, intres)
@@ -1650,7 +1612,7 @@ contains
 !            & get_region_chisq_singlepar, state, parvals, lnLvals, currsize)
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_region_chisq_singlepar, state)
-         print *, 'brentres_region', maxpoint
+!         print *, 'brentres_region', maxpoint
          lnL0 = -0.5d0 * chisqmin
          do i = 1, currsize
             lnLvals(i) = exp(-0.5d0 * lnLvals(i) - lnL0)
@@ -1674,7 +1636,7 @@ contains
             lnL = get_region_like_singlepar(int_low, state, lnL0)
          end if
          call add_to_vals(int_low, lnL, parvals, lnLvals, currsize)
-         print *, 'int_low_region', int_low
+!         print *, 'int_low_region', int_low
          !Upper boundary
 
          delta = min(0.0001, 0.01 * abs(maxpoint))
@@ -1693,17 +1655,17 @@ contains
             int_high = prior_high(component)
             lnL = get_region_like_singlepar(int_high, state, lnL0)
          end if
-         print *, 'int_high_region', int_high
+!         print *, 'int_high_region', int_high
          call add_to_vals(int_high, lnL, parvals, lnLvals, currsize)
          limits(1) = int_low
          limits(2) = int_high
          call spline_int_refine(get_region_like_singlepar, int_low, int_high, state, lnL0, err, parvals, lnLvals, currsize, intres)
       end if
       if (isnan(intres)) stop
-      print *, 'intres', intres
-      print *, 'logintres', log(intres)
-      print *, 'lnl0', lnL0
-      print *, 'loginthighintlow', log(int_high - int_low)
+!      print *, 'intres', intres
+!      print *, 'logintres', log(intres)
+!      print *, 'lnl0', lnL0
+!      print *, 'loginthighintlow', log(int_high - int_low)
       intres = log(intres) + lnL0 - log(int_high - int_low)
 !      get_pixel_marginalised_likelihood = log(res) + lnL0 - log(int_high - int_low)
    end subroutine get_maxpoint_and_splinedint
