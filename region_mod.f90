@@ -370,7 +370,6 @@ contains
          call pop(available_region_numbers(component), & 
             & pixel_curr_region(pixel, component))
          reg_prop = pixel_curr_region(pixel, component)
-!         print *, 'reg_prop', reg_prop
          if (size(region, 1) < reg_prop) then
             allocate(region_temp(size(region, 1), num_components))
             do j = 1, num_components
@@ -543,8 +542,6 @@ contains
       call get_maxpoint_and_qrombint(1, pixel_lnL_state, maxlikepoint, res)
 
       get_pixel_marginalised_likelihood = res
-
-!      print *, 'pix_marglike', get_pixel_marginalised_likelihood
 
    end function get_pixel_marginalised_likelihood
 
@@ -1085,7 +1082,6 @@ contains
          if (int_low < prior_low(component)) then
             int_low = prior_low(component)
          end if
-!         print *, 'int_low', int_low
          !Upper boundary
          delta = min(0.0001, 0.01 * abs(maxpoint))
          lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
@@ -1101,7 +1097,6 @@ contains
          if (int_high > prior_high(component)) then
             int_high = prior_high(component)
          end if
-!         print *, 'int_high', int_high
          limits(1) = int_low
          limits(2) = int_high
          intres =  qromb(get_single_pixel_like, int_low, int_high, &
@@ -1111,7 +1106,6 @@ contains
          !Region-likelihood
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_region_chisq_singlepar, state)
-!         print *, 'brentres_region', maxpoint
          lnL0 = -0.5d0 * chisqmin
 
          delta = min(0.0001, 0.01 * abs(maxpoint))
@@ -1128,7 +1122,6 @@ contains
          if (int_low < prior_low(component)) then
             int_low = prior_low(component)
          end if
-!         print *, 'int_low_region', int_low
          !Upper boundary
 
          delta = min(0.0001, 0.01 * abs(maxpoint))
@@ -1146,7 +1139,6 @@ contains
             int_high = prior_high(component)
             lnL = get_region_like_singlepar(int_high, state, lnL0)
          end if
-!         print *, 'int_high_region', int_high
          limits(1) = int_low
          limits(2) = int_high
          !Normalize relative to parameter space
@@ -1154,10 +1146,6 @@ contains
             & err)
       end if
       if (isnan(intres)) stop
-!      print *, 'intres', intres
-!      print *, 'logintres', log(intres)
-!      print *, 'lnl0', lnL0
-!      print *, 'loginthighintlow', log(int_high - int_low)
       intres = log(intres) + lnL0 - log(int_high - int_low)
    end subroutine get_maxpoint_and_qrombint
 
@@ -1192,7 +1180,6 @@ contains
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_single_pixel_chisq_singlepar, state)
 
-!         print *, 'currsize', currsize
          lnL0 = -0.5d0 * chisqmin
          do i = 1, currsize
             lnLvals(i) = exp(-0.5d0 * lnLvals(i) - lnL0)
@@ -1215,7 +1202,6 @@ contains
             lnL = get_single_pixel_like_singlepar(int_low, state, lnL0)
          end if
          call add_to_vals(int_low, lnL, parvals, lnLvals, currsize)
-!         print *, 'int_low', int_low
          !Upper boundary
          delta = min(0.0001, 0.01 * abs(maxpoint))
          lnL = get_single_pixel_like_singlepar(maxpoint + delta, state, lnL0)
@@ -1234,7 +1220,6 @@ contains
             lnL = get_single_pixel_like_singlepar(int_high, state, lnL0)
          end if
          call add_to_vals(int_high, lnL, parvals, lnLvals, currsize)
-!         print *, 'int_high', int_high
          limits(1) = int_low
          limits(2) = int_high
          call spline_int_refine(get_single_pixel_like_singlepar, int_low, int_high, state, lnL0, err, parvals, lnLvals, currsize, intres)
@@ -1243,7 +1228,6 @@ contains
          !Region-likelihood
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_region_chisq_singlepar, state)
-!         print *, 'brentres_region', maxpoint
          lnL0 = -0.5d0 * chisqmin
          do i = 1, currsize
             lnLvals(i) = exp(-0.5d0 * lnLvals(i) - lnL0)
@@ -1267,7 +1251,6 @@ contains
             lnL = get_region_like_singlepar(int_low, state, lnL0)
          end if
          call add_to_vals(int_low, lnL, parvals, lnLvals, currsize)
-!         print *, 'int_low_region', int_low
          !Upper boundary
 
          delta = min(0.0001, 0.01 * abs(maxpoint))
@@ -1286,17 +1269,12 @@ contains
             int_high = prior_high(component)
             lnL = get_region_like_singlepar(int_high, state, lnL0)
          end if
-!         print *, 'int_high_region', int_high
          call add_to_vals(int_high, lnL, parvals, lnLvals, currsize)
          limits(1) = int_low
          limits(2) = int_high
          call spline_int_refine(get_region_like_singlepar, int_low, int_high, state, lnL0, err, parvals, lnLvals, currsize, intres)
       end if
       if (isnan(intres)) stop
-!      print *, 'intres', intres
-!      print *, 'logintres', log(intres)
-!      print *, 'lnl0', lnL0
-!      print *, 'loginthighintlow', log(int_high - int_low)
       intres = log(intres) + lnL0 - log(int_high - int_low)
    end subroutine get_maxpoint_and_splinedint
 
