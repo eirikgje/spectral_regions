@@ -241,21 +241,21 @@ contains
          end do
       end do
 
-      allocate(ampmap(0:npix-1, num_components))
-      call read_map(map_temp, ordering, '/mn/stornext/d3/eirikgje/data/vault/foreground_templates/lambda_haslam408_dsds.fits')
-      if (ordering == 1) then
-         call convert_ring2nest(512, map_temp(:, 1))
-      end if
-      call udgrade_nest(map_temp(:, 1) * 1d6, 512, ampmap(:, 1), nside)
-      deallocate(map_temp)
-      call read_map(map_temp, ordering, '/mn/stornext/d3/eirikgje/data/vault/foreground_templates/lambda_fds_dust_94GHz.fits')
-      if (ordering == 1) then
-         call convert_ring2nest(512, map_temp(:, 1))
-      end if
-      call udgrade_nest(map_temp(:, 1) * 1d3, 512, ampmap(:, 2), nside)
-      deallocate(map_temp)
-
       !TEST
+!      allocate(ampmap(0:npix-1, num_components))
+!      call read_map(map_temp, ordering, '/mn/stornext/d3/eirikgje/data/vault/foreground_templates/lambda_haslam408_dsds.fits')
+!      if (ordering == 1) then
+!         call convert_ring2nest(512, map_temp(:, 1))
+!      end if
+!      call udgrade_nest(map_temp(:, 1) * 1d6, 512, ampmap(:, 1), nside)
+!      deallocate(map_temp)
+!      call read_map(map_temp, ordering, '/mn/stornext/d3/eirikgje/data/vault/foreground_templates/lambda_fds_dust_94GHz.fits')
+!      if (ordering == 1) then
+!         call convert_ring2nest(512, map_temp(:, 1))
+!      end if
+!      call udgrade_nest(map_temp(:, 1) * 1d3, 512, ampmap(:, 2), nside)
+!      deallocate(map_temp)
+!
 !      allocate(model(0:npix-1, numband))
 !      allocate(dmodel(0:npix-1, numband))
 !      allocate(invdmodel(0:npix-1, numband))
