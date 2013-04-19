@@ -534,8 +534,8 @@ contains
          currparam_maxlike = region(reg_curr, component)%param
          currparam_limits = region(reg_curr, component)%param_bounds
       end if
-!      print *, 'currparams', region(reg_curr, :)%param
-!      print *, 'lnLcurr', lnLcurr
+      print *, 'currparams', region(reg_curr, :)%param
+      print *, 'lnLcurr', lnLcurr
       lnLprop_new = get_pixel_marginalised_likelihood(pixel, component, &
          & maxlikepoint=param_maxlike_new, limits=limits_new)
 !      print *, 'new', lnLprop_new
@@ -847,6 +847,7 @@ contains
       integer(i4b), dimension(:), intent(in) :: region_state
       real(dp), intent(in)      :: offset
 
+!      real(dp), dimension(size(par))  :: temp
       integer(i4b), dimension(2)        :: pix_state
       integer(i4b)      :: region_num, component, pix_sub, pix_add
       integer(i4b)      :: i, j
@@ -856,18 +857,30 @@ contains
       pix_sub = region_state(3)
       pix_add = region_state(4)
 
-      pix_state(2) = component
 
       get_region_like = 0
 
+
+      !$OMP PARALLEL PRIVATE(i, pix_state)
+      pix_state(2) = component
+
+      !$OMP DO SCHEDULE(GUIDED)
       do i = 0, npix - 1
          if ((pixel_curr_region(i, component) == region_num .and. .not. & 
             & i == pix_sub) .or. i == pix_add) then
             pix_state(1) = i
-            get_region_like = get_region_like - 0.5d0 * get_single_pixel_chisq(par,pix_state)
+            !$OMP CRITICAL
+            get_region_like = get_region_like + get_single_pixel_chisq(par, pix_state)
+            !$OMP END CRITICAL
+!            temp = get_single_pixel_chisq(par, pix_state)
+!            get_region_like = get_region_like - 0.5d0 * temp
          end if
       end do
-      get_region_like = exp(get_region_like - offset)
+      !$OMP END DO
+
+      !$OMP END PARALLEL
+
+      get_region_like = exp(-0.5d0 * get_region_like - offset)
 !      print *, 'offset', offset
 !      print *, 'reglike', get_region_like
 
@@ -880,6 +893,7 @@ contains
       integer(i4b), dimension(:), intent(in) :: region_state
       real(dp), intent(in)      :: offset
 
+      real(dp)  :: temp
       integer(i4b), dimension(2)        :: pix_state
       integer(i4b)      :: region_num, component, pix_sub, pix_add
       integer(i4b)      :: i, j
@@ -891,15 +905,25 @@ contains
 
       get_region_like_singlepar = 0
 
+!      print *, 'singlepar'
+
+      !$OMP PARALLEL PRIVATE(i, pix_state)
       pix_state(2) = component
 
+      !$OMP DO SCHEDULE(GUIDED)
       do i = 0, npix - 1
          if ((pixel_curr_region(i, component) == region_num .and. .not. & 
             & i == pix_sub) .or. i == pix_add) then
             pix_state(1) = i
+            !$OMP CRITICAL
             get_region_like_singlepar = get_region_like_singlepar + get_single_pixel_chisq_singlepar(par, pix_state)
+            !$OMP END CRITICAL
          end if
       end do
+
+      !$OMP END DO NOWAIT
+
+      !$OMP END PARALLEL
 
       get_region_like_singlepar = exp(-0.5d0 * get_region_like_singlepar - offset)
 !      print *, 'chisq_tot', chisq_tot
@@ -1422,8 +1446,6 @@ contains
 
       if (mode == 1) then
          !Single pixel-likelihood
-!         !We start by checking if the upper and lower priors are actually
-!         !max-like points. In that case, we won't call minimize_brent.
          
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_single_pixel_chisq_singlepar, state)
@@ -1467,9 +1489,11 @@ contains
 
       else if (mode == 2) then
          !Region-likelihood
+         print *, 'pre_minimize'
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_region_chisq_singlepar, state)
-!         print *, 'brentres_region', maxpoint
+
+         print *, 'brentres_region', maxpoint
          lnL0 = -0.5d0 * chisqmin
 
          delta = min(0.0001, 0.01 * abs(maxpoint))
