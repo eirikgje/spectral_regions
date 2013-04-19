@@ -629,10 +629,10 @@ contains
          if ((pixel_curr_region(i, component) == region_num .and. .not. & 
             & i == pix_sub) .or. i == pix_add) then
             pix_state(1) = i
-            get_region_like = get_region_like - 0.5d0 * get_single_pixel_chisq(par,pix_state)
+            get_region_like = get_region_like + get_single_pixel_chisq(par,pix_state)
          end if
       end do
-      get_region_like = exp(get_region_like - offset)
+      get_region_like = exp(-0.5d0 * get_region_like - offset)
 
    end function get_region_like
 
