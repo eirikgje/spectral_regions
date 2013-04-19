@@ -60,12 +60,6 @@ contains
       real(dp), allocatable, dimension(:, :)    :: map_temp
       real(dp), dimension(3)                    :: pixvec
 
-      !TEST
-      real(dp), allocatable, dimension(:, :)       :: model, dmodel, invdmodel
-      real(dp), dimension(2)                    :: param
-      real(dp), allocatable, dimension(:, :)    :: ampmap, parammap
-      real(dp)                                  :: summ
-
       call get_parameter(unit, paramfile, 'SEED', par_int=seed)
       call get_parameter(unit, paramfile, 'NSIDE', par_int=nside)
       call get_parameter(unit, paramfile, 'NUM_SPECTRAL_BEHAVIORS', & 
@@ -183,15 +177,6 @@ contains
          end do
       end do
 
-      !TEST
-!      do i = 1, num_components
-!         do j = 1, num_init_reg(i)
-!            print *, 'alleged numpix', region(j, i)%num_pix
-!            print *, 'actual numpix', count(pixel_curr_region(:, i) == j)
-!         end do
-!      end do
-!      stop
-
       !Initialize spectral indices
       allocate(initdisp(num_components))
       allocate(initpar(num_components))
@@ -209,17 +194,6 @@ contains
             !Add more behaviors here as needed!
          end if
       end do
-
-      !Allocate mixmat, which will be used in the log-likelihood-subroutines
-!      allocate(mixmat(numband, num_components))
-
-      !Initialize log-L map and currlnL
-!      allocate(lnLmap(npix))
-!      allocate(lnLmap_prop(npix))
-!      do i = 0, npix-1
-!         lnLmap(i) = get_pixel_contribution(i)
-!      end do
-!      currlnL = sum(lnLmap)
 
       !Find neighbours (for use later)
       allocate(neighbours(8, 0:npix-1))
@@ -241,60 +215,6 @@ contains
          end do
       end do
 
-      allocate(ampmap(0:npix-1, num_components))
-      call read_map(map_temp, ordering, '/mn/stornext/d3/eirikgje/data/vault/foreground_templates/lambda_haslam408_dsds.fits')
-      if (ordering == 1) then
-         call convert_ring2nest(512, map_temp(:, 1))
-      end if
-      call udgrade_nest(map_temp(:, 1) * 1d6, 512, ampmap(:, 1), nside)
-      deallocate(map_temp)
-      call read_map(map_temp, ordering, '/mn/stornext/d3/eirikgje/data/vault/foreground_templates/lambda_fds_dust_94GHz.fits')
-      if (ordering == 1) then
-         call convert_ring2nest(512, map_temp(:, 1))
-      end if
-      call udgrade_nest(map_temp(:, 1) * 1d3, 512, ampmap(:, 2), nside)
-      deallocate(map_temp)
-
-      !TEST
-!      allocate(model(0:npix-1, numband))
-!      allocate(dmodel(0:npix-1, numband))
-!      allocate(invdmodel(0:npix-1, numband))
-!      allocate(parammap(0:npix-1, num_components))
-!      call read_map(map_temp, ordering, 'test1_maps/parammaps_01.fits')
-!      if (ordering == 1) then
-!         call convert_ring2nest(nside, map_temp(:, 1))
-!      end if
-!      parammap(:, 1) = map_temp(:, 1)
-!      deallocate(map_temp)
-!      call read_map(map_temp, ordering, 'test1_maps/parammaps_02.fits')
-!      if (ordering == 1) then
-!         call convert_ring2nest(nside, map_temp(:, 1))
-!      end if
-!      parammap(:, 2) = map_temp(:, 1)
-!      deallocate(map_temp)
-!
-!      model = 0
-!      do j = 1, numband
-!         do i = 1, num_components
-!            model(:, j) = model(:, j) + ampmap(:, i) * a2t(j) * mixmat_base(j, i) ** parammap(:, i)
-!         end do
-!         dmodel(:,j) = dat(j, :) - model(:, j)
-!         invdmodel(:, j) = dmodel(:, j) * invN(j, :)
-!      end do
-!!      print *, 'data', dat(:, :)
-!!      print *, 'invN', invN(:, )
-!!      print *, 'model', model
-!!      print *, 'dmodel', dmodel
-!!      print *, 'invdmodel', invdmodel
-!      summ = 0
-!      do i = 0, npix-1
-!         print *, 'test', dot_product(dmodel(i, :), invdmodel(i, :))
-!         summ = summ + dot_product(dmodel(i, :), invdmodel(i, :))
-!      end do
-!      print *, 'summ', summ / npix
-!      stop
-
-
    end subroutine initialize_region_mod
 
    subroutine sample_marginalised_regions
@@ -305,113 +225,10 @@ contains
       integer(i4b)      :: i, j, k, l, pix
       integer(i4b)      :: nneighbour_region, reg_prop
 
-      !TEST
-      real(dp), dimension(9008) :: xsplint, ysplint, y2
-!      real(dp), dimension(1000) :: y, x
-      real(dp), allocatable, dimension(:) :: y, x
-      real(sp)  :: time1, time2
-      real(dp)  :: dum, par, dx
-      real(dp), dimension(10)   :: par_arr, dum_arr
-      integer(i4b), dimension(2)      :: pixel_state
-      integer(i4b), dimension(4)      :: region_state
-      character(len=5)          :: testtext
-      character(len=2)          :: comptext
-      integer(i4b)      :: currsize
-      logical(lgt)      :: err
-
       do i = 1, num_components
          region(:, i)%first_eval = .True.
       end do
 
-!      dx = 100.d0 / (1000.d0 - 1)
-
-!
-!      allocate(x(10), y(10))
-!      dx = 10.d0 / (3.d0 - 1)
-!      pixel_state = 0
-!      par = 5
-!      do i = 1, 3
-!         x(i) = -5.d0 + dx * (i-1)
-!      end do
-!      dum = x(3)
-!      x(3) = x(2)
-!      x(2) = dum
-!      print *, 'hey2'
-!      y(1:3) = 2 * gaussian(x(1:3), pixel_state, par)
-!      print *, 'x', x
-!      print *, 'y', y
-!      stop
-!      currsize = 3
-!      call spline_int_refine(gaussian_singlepar, -5.d0, 5.d0, pixel_state, par, err, x, y,currsize, dum)
-!      print *, 'currsize', currsize
-!      print *, 'res', dum
-!      stop
-!      open(40, file='nonspline.dat')
-!      do i = 1, 100
-!         write(40, *) x(i), y(i)
-!      end do
-!      close(40)
-!      dum = 0
-!      do i = 1, 10000
-!         dum = dum + dx * y(i)
-!      end do
-!      print *, dum
-
-!      call spline(x, y, 1.d30, 1.d30, y2)
-!      dx = 10.d0 / (9007.d0)
-!      do i = 1, 9008
-!         xsplint(i) = -5.d0 + dx * (i-1)
-!         ysplint(i) = splint(x, y, y2, 100, xsplint(i))
-!      end do
-!      open(40, file='spline.dat')
-!      do i = 1, 9008
-!         write(40, *) xsplint(i), ysplint(i)
-!      end do
-!      close(40)
-
-
-!      print *, y2
-!      stop
-!      print *, 'hey'
-!      dum = 0
-!      call spline_int(x, y, y2, dum)
-!      print *, dum
-!      stop
-
-
-!
-!      dum = qromb(gaussian, -50000.d0, 50000.d0, pixel_state, par, err)
-!      print *, dum
-!      stop
-
-
-!      pixel_state(1) = 2171
-!      pixel_state(2) = 2
-!      call output_likelihood(prior_low(2), prior_high(2), 100000, get_single_pixel_chisq_singlepar, pixel_state, 'skjera.dat')
-!      stop
-
-      !TEST
-!      pixel_state(2) = 1
-!      call cpu_time(time1)
-!!      dum = qromb(get_single_pixel_like, -2.d0, -1.98d0, pixel_state, 5000.d0)
-!
-!      region_state(1) = 1
-!      region_state(2) = 1
-!      region_state(3) = -1
-!      region_state(4) = -1
-!      print *, region(1, 1)%num_pix
-!      do i = 1, 10000
-!!         pixel_state(1) = int(rand_uni(rng_handle) * npix)
-!         print *, i
-!         do j = 1, 10
-!            par_arr(j) = rand_gauss(rng_handle) - 2
-!         end do
-!         dum_arr = get_region_chisq(par_arr, region_state)
-!      end do
-!      call cpu_time(time2)
-!      print *, time2 - time1
-!      stop
-         
       !During burn-in, the earlier pixels have a better chance of forming new
       !regions than the latter ones due to the region number prior. We therefore
       !scramble the list of pixels, and we do the inner loop over components
@@ -421,12 +238,6 @@ contains
          do i = 1, num_components
             pix = pixlist_scramble(i, j)
             print *, 'curr_pixel', pix
-!            print *, 'pix_data', dat(:, pix)
-!            pixel_state(1) = pix
-!            pixel_state(2) = i
-!            call int2string(pix, testtext)
-!            call int2string(i, comptext)
-!            call output_likelihood(prior_low(i), prior_high(i), 1000, get_single_pixel_chisq_singlepar, pixel_state, 'like_out_' // testtext // 'component_' // comptext // '.dat')
             neighbour_region = -1
             nneighbour_region = 0
             !Find all neighbouring regions
@@ -523,38 +334,21 @@ contains
          return
       end if
 
-!      print *, 'comp', component
-!      print *, 'currlims', region(reg_curr, component)%param_bounds
       if (region(reg_curr, component)%first_eval) then
          lnLcurr = get_region_marginalised_likelihood(reg_curr, component, & 
             & maxlikepoint=currparam_maxlike, limits=currparam_limits)
-!         print *, 'currmaxlikepoint', currparam_maxlike
       else
          lnLcurr = region(reg_curr, component)%currlnL
          currparam_maxlike = region(reg_curr, component)%param
          currparam_limits = region(reg_curr, component)%param_bounds
       end if
-!      print *, 'currparams', region(reg_curr, :)%param
-!      print *, 'lnLcurr', lnLcurr
       lnLprop_new = get_pixel_marginalised_likelihood(pixel, component, &
          & maxlikepoint=param_maxlike_new, limits=limits_new)
-!      print *, 'new', lnLprop_new
-!      print *, 'param_maxlike_new', param_maxlike_new
       lnLprop_curr = & 
          & get_region_marginalised_likelihood(reg_curr, component, & 
          & subtract_pixel=pixel, maxlikepoint=propparam_maxlike, &
          & limits=propparam_limits)
       lnLprop = lnLprop_new + lnLprop_curr
-!      if (lnLprop < lnLcurr) then
-!         write(*,*) 'hmmmmm'
-!         print *, 'lnLprop', lnLprop
-!         print *, 'lnLcurr', lnLcurr
-!         print *, 'lnLprop_new', lnLprop_new
-!         print *, 'lnLprop_curr', lnLprop_curr
-!         print *, 'numpixels', region(reg_curr, component)%num_pix
-!         stop
-!      end if
-!      print *, 'lnLprop', lnLprop
       !The lambda term is due to the fact that we now have one more region and
       !we have a prior on the number of regions
       accept = exp(lnLprop - lnLcurr - lambda) > rand_uni(rng_handle)
@@ -599,20 +393,8 @@ contains
                   region(i, j)%first_eval = region_temp(i, j)%first_eval
                end do
             end do
-            !Check
-!            do i = 1, num_components
-!               do j = 1, size(region_temp, 1)
-!                  print *, 'alleged numpix', region(j, i)%num_pix
-!                  print *, 'actual numpix', count(pixel_curr_region(:, i) == j)
-!               end do
-!            end do
-!            stop
-
-
-!            region(1:size(region_temp, 1), :) = region_temp(:, :)
             deallocate(region_temp)
          end if
-!         region(pixel_curr_region(pixel, component), component)%active = .True.
          region(reg_prop, component)%num_pix = 1
          region(reg_prop, component)%param = param_maxlike_new
          region(reg_prop, component)%currlnL = lnLprop_new
@@ -755,96 +537,11 @@ contains
       pixel_lnL_state(1) = pixel
       pixel_lnL_state(2) = component
 
-!      if (pixel == 11089) then
-!         do i = 1, num_components
-!            print *, 'params', region(pixel_curr_region(pixel, i), i)
-!         end do
-!         call output_likelihood(-50.d0, 50.d0, 1000, get_single_pixel_chisq_singlepar, pixel_lnL_state)
-!         stop
-!      end if
-
       !When calling this routine, it means we are starting a new region. The
       !parameter boundaries must thus be the ones set initially by user.
-!      parlow = initpar(component) - initdisp(component)
-!      parhigh = initpar(component) + initdisp(component)
-
 
       call get_maxpoint_and_splinedint(1, pixel_lnL_state, maxlikepoint, res)
 
-      !Commented out
-!
-!
-!      !NEW: Try to use priors as boundaries, so that the whole area is searched
-!      !- could be helpful when there are several minima on the range
-!      parlow = prior_low(component)
-!      parhigh = prior_high(component)
-!!      print *, 'component', component
-!!      print *, 'parlow, parhigh', parlow, parhigh
-!      call minimize_brent(parlow, parhigh, parmin, chisqmin, & 
-!         & get_single_pixel_chisq_singlepar, pixel_lnL_state)
-!      print *, 'brentres', parmin
-!      maxlikepoint = parmin
-!      !Find boundaries given the maximum point
-!      !dlnL = 20.d0
-!      lnL0 = -0.5d0 * chisqmin
-!      delta = min(0.0001, 0.01 * abs(parmin))
-!      !lnL = -0.5d0 * get_single_pixel_chisq_singlepar(parmin - delta, pixel_lnL_state)
-!      lnL = get_single_pixel_like_singlepar(parmin - delta, pixel_lnL_state, lnL0)
-!      do while (lnL < 1.d-5)
-!         delta = 0.5d0 * delta
-!         lnL = get_single_pixel_like_singlepar(parmin - delta, pixel_lnL_state, lnL0)
-!      end do
-!      do while (lnL > 1.d-5)
-!         delta = 2.d0 * delta
-!!         lnL = -0.5d0 * get_single_pixel_chisq_singlepar(parmin - delta, pixel_lnL_state)
-!         lnL = get_single_pixel_like_singlepar(parmin - delta, pixel_lnL_state, lnL0)
-!      end do
-!      int_low = parmin - delta
-!      if (int_low < prior_low(component)) then
-!         int_low = prior_low(component)
-!      end if
-!      print *, 'int_low', int_low
-!      !Upper boundary
-!      delta = min(0.0001, 0.01 * abs(parmin))
-!!      lnL = -0.5d0 * get_single_pixel_chisq_singlepar(parmin + delta, pixel_lnL_state)
-!      lnL = get_single_pixel_like_singlepar(parmin + delta, pixel_lnL_state, lnL0)
-!      do while (lnL < 1.d-5)
-!         delta = 0.5d0 * delta
-!         lnL = get_single_pixel_like_singlepar(parmin + delta, pixel_lnL_state, lnL0)
-!      end do
-!
-!      do while (lnL > 1.d-5)
-!         delta = 2.d0 * delta
-!         lnL = get_single_pixel_like_singlepar(parmin + delta, pixel_lnL_state, lnL0)
-!      end do
-!      int_high = parmin + delta
-!      if (int_high > prior_high(component)) then
-!         int_high = prior_high(component)
-!      end if
-!      print *, 'int_high', int_high
-!      limits(1) = int_low
-!      limits(2) = int_high
-!
-!      !Now, do the romberg integration
-!      res = qromb(get_single_pixel_like, int_low, int_high, pixel_lnL_state, lnL0, err)
-!      if (err) then
-!         call output_likelihood(prior_low(component), prior_high(component), 1000, get_single_pixel_like, pixel_lnL_state, lnL0)
-!         call output_maps(1000)
-!         write(*,*) 'Error in qromb - too many steps'
-!         write(*,*) 'Error was in single_pixel_like'
-!         write(*,*) 'pixel: ', pixel
-!         write(*,*) 'component:', component
-!         write(*,*) 'Current regions for this pixel:', & 
-!            & pixel_curr_region(pixel, :)
-!         write(*,*) 'Current parameters for this pixel: '
-!         do i = 1, num_components
-!            write(*,*) 'Component ', i, ':'
-!            write(*,*)  region(pixel_curr_region(pixel, i), i)%param
-!         end do
-!         write(*,*) 'Data values for this pixel: ', dat(:, pixel)
-!         stop
-!      end if
-!      get_pixel_marginalised_likelihood = log(res) + lnL0 - log(int_high - int_low)
       get_pixel_marginalised_likelihood = res
 
       print *, 'pix_marglike', get_pixel_marginalised_likelihood
@@ -907,92 +604,7 @@ contains
 
       call get_maxpoint_and_splinedint(2, region_lnL_state, maxlikepoint, res)
 
-      !Commented out
-      !This routine should only be called with existing regions, so we can take
-      !initial bracketing guesses from the region-info datatype
-!      parlow = region(region_num, component)%param_bounds(1)
-!!      parhigh = region(region_num, component)%param_bounds(2)
-!      !Try with priors instead
-!      parlow = prior_low(component)
-!      parhigh = prior_high(component)
-!      call minimize_brent(parlow, parhigh, parmin, chisqmin, & 
-!         & get_region_chisq_singlepar, region_lnL_state)
-!      maxlikepoint = parmin
-!      print *, 'brentres_region', parmin
-!      !Find boundaries given the maximum point
-!!      dlnL = 20.d0
-!      lnL0 = -0.5d0 * chisqmin
-!      delta = min(0.0001, 0.01 * abs(parmin))
-!!      lnL = -0.5d0 * get_region_chisq_singlepar(parmin - delta, region_lnL_state)
-!      lnL = get_region_like_singlepar(parmin-delta, region_lnL_state, lnL0)
-!      do while (lnL < 1.d-5)
-!         delta = 0.5d0 * delta
-!         lnL = get_region_like_singlepar(parmin - delta, region_lnL_state, lnL0)
-!      end do
-!      do while (lnL > 1.d-5)
-!         delta = 2.d0 * delta
-!!         print *, 'delta', delta
-!         lnL = get_region_like_singlepar(parmin - delta, region_lnL_state, lnL0)
-!!         print *, 'lnL', lnL
-!!         print *, 'parmin - delta', parmin - delta
-!      end do
-!!      end do
-!      int_low = parmin - delta
-!      if (int_low < prior_low(component)) then
-!         int_low = prior_low(component)
-!      end if
-!      print *, 'int_low_region', int_low
-!      !Upper boundary
-!!      call output_likelihood(-70.d0, 70.d0, 1000, get_region_chisq_singlepar,region_lnL_state)
-!!      stop
-!
-!      delta = min(0.0001, 0.01 * abs(parmin))
-!      lnL = get_region_like_singlepar(parmin + delta, region_lnL_state, lnL0)
-!!      lnL = -0.5d0 * get_region_chisq_singlepar(parmin + delta, region_lnL_state)
-!!      do while (lnL0 - lnL < dlnL)
-!      do while (lnL < 1.d-5)
-!         delta = 0.5d0 * delta
-!         lnL = get_region_like_singlepar(parmin + delta, region_lnL_state, lnL0)
-!      end do
-!      do while (lnL > 1.d-5)
-!         delta = 2.d0 * delta
-!         lnL = get_region_like_singlepar(parmin + delta, region_lnL_state, lnL0)
-!      end do
-!      int_high = parmin + delta
-!      if (int_high > prior_high(component)) then
-!         int_high = prior_high(component)
-!      end if
-!      print *, 'int_high_region', int_high
-!      limits(1) = int_low
-!      limits(2) = int_high
-!
-!      !Now, do the romberg integration
-!      res = qromb(get_region_like, int_low, int_high, region_lnL_state, lnL0, err)
-!!      print *, 'postqromb'
-!      if (err) then
-!         call output_likelihood(prior_low(component), prior_high(component), 1000, get_region_like, region_lnL_state, lnL0)
-!         call output_maps(1000)
-!         write(*,*) 'Error in qromb - too many steps'
-!         write(*,*) 'Error was in get_region_like'
-!         write(*,*) 'Region: ', region_num
-!         write(*,*) 'component:', component
-!         write(*,*) 'pix_sub:', pix_sub
-!         write(*,*) 'pix_add:', pix_add
-!         write(*,*) 'Current parameter for this region: ', &
-!            & region(region_num, component)%param
-!!         do i = 1, num_components
-!!            write(*,*) 'Component ', i, ':'
-!!            write(*,*)  region(region_num, i)%param
-!!         end do
-!         write(*,*) 'Current number of pixels in this region: ', & 
-!            & region(region_num, component)%num_pix
-!!         write(*,*) 'Data values for this pixel: ' dat(:, pixel)
-!         stop
-!      end if
-!
-!      get_region_marginalised_likelihood = log(res) + lnL0 - log(int_high-int_low)
       get_region_marginalised_likelihood = res
-      print *, 'reg_marglike', get_region_marginalised_likelihood
 
    end function get_region_marginalised_likelihood
 
@@ -1025,8 +637,6 @@ contains
          end if
       end do
       get_region_like = exp(get_region_like - offset)
-!      print *, 'offset', offset
-!      print *, 'reglike', get_region_like
 
    end function get_region_like
 
@@ -1059,8 +669,6 @@ contains
       end do
 
       get_region_like_singlepar = exp(-0.5d0 * get_region_like_singlepar - offset)
-!      print *, 'chisq_tot', chisq_tot
-!      stop
 
    end function get_region_like_singlepar
 
@@ -1071,7 +679,6 @@ contains
       integer(i4b), dimension(:), intent(in) :: region_state
 
       integer(i4b), dimension(2)        :: pix_state
-!      real(dp)          :: chisq_tot
       integer(i4b)      :: region_num, component, pix_sub, pix_add
       integer(i4b)      :: i, j
 
@@ -1079,8 +686,6 @@ contains
       component = region_state(2)
       pix_sub = region_state(3)
       pix_add = region_state(4)
-
-!      chisq_tot = 0
 
       pix_state(2) = component
 
@@ -1096,7 +701,6 @@ contains
             get_region_chisq = get_region_chisq + get_single_pixel_chisq(par, pix_state)
          end if
       end do
-!      get_region_chisq = chisq_tot
 
    end function get_region_chisq
 
@@ -1116,7 +720,7 @@ contains
       pix_sub = region_state(3)
       pix_add = region_state(4)
 
-      chisq_tot = 0
+      get_region_chisq_singlepar = 0
 
       pix_state(2) = component
 
@@ -1124,16 +728,12 @@ contains
          if (pixel_curr_region(i, component) == region_num .and. .not. & 
             & i == pix_sub) then
             pix_state(1) = i
-            chisq_tot = chisq_tot + get_single_pixel_chisq_singlepar(par, pix_state)
+            get_region_chisq_singlepar = get_region_chisq_singlepar + get_single_pixel_chisq_singlepar(par, pix_state)
          else if (i == pix_add) then
             pix_state(1) = i
-            chisq_tot = chisq_tot + get_single_pixel_chisq_singlepar(par, pix_state)
+            get_region_chisq_singlepar = get_region_chisq_singlepar + get_single_pixel_chisq_singlepar(par, pix_state)
          end if
       end do
-
-      get_region_chisq_singlepar = chisq_tot
-!      print *, 'chisq_tot', chisq_tot
-!      stop
 
    end function get_region_chisq_singlepar
 
@@ -1187,26 +787,12 @@ contains
       end do
       do k = 1, size(par)
          call calc_mixing_matrix(par(k), pixnum, component, mixmat)
-!      if (pixnum == 11089) then
-!         print *, 'mixmat', mixmat
-!         print *, 'invN', invN(:, pixnum)
-!      end if
          do i = 1, numband
             mixmat_invn(i, :) = mixmat(i, :) * invN(i, pixnum)
          end do
-!      if (pixnum == 11089) then
-!         print *, 'mixmat_invn', mixmat_invn
-!      end if
          Minv = matmul(transpose(mixmat_invn), mixmat)
 
          MinvLU = Minv
-!      if (pixnum == 11089) then
-!         print *, 'pix', pixnum
-!         print *, 'par', par
-!         print *, 'Minv', Minv
-!      end if
-!      call ludcmp(MinvLU, num_components, num_components, indx, det)
-!         call ludcmp(MinvLU, indx, det)
          call choldc(MinvLU, diag)
          if (all(diag == 0)) then
              get_single_pixel_chisq(k) = 1.d30
@@ -1216,37 +802,10 @@ contains
             lndet = lndet + log(diag(j))
          end do
          lndet = 2.d0*lndet
-!         det = 1 / det
-!         det = sqrt(det)
-
-      !Calculate determinant
-!      M = inv(Minv)
-!      if (pixnum == 11089) then
-!         print *, 'MinvLU', MinvLU
-!         print *, 'det', det
-!         print *, 'logdet', log(det)
-!      end if
-!      if (pixnum == 11089) then
-!         print *, 'dat_invn', dat_invn
-!      end if
          x = matmul(transpose(mixmat), dat_invn)
          b = x
       !Solve Minvb = x for b
-!      call lubksb(MinvLU, num_components, num_components, indx, b)
-!         call lubksb(MinvLU, indx, b)
          call cholsl(MinvLU, diag, x, b)
-!      xm = matmul(M, matmul(transpose(mixmat), dat_invn))
-!      sqrtdetM = 1.d0
-!      do j = 1, num_components
-!         sqrtdetM = sqrtdetM * M(j, j)
-!      end do
-!      sqrtdetM = sqrt(sqrtdetM)
-!      if (pixnum == 11089) then
-!         print *, 'dat', dat(:, pixnum)
-!         print *, 'x', x
-!         print *, 'b', b
-!         print *, 'dot', dot_product(x, b)
-!      end if
          get_single_pixel_chisq(k) = lndet - dot_product(x, b)
       end do
 
@@ -1279,28 +838,10 @@ contains
          return
       end if
       call calc_mixing_matrix(par, pixnum, component, mixmat)
-!      if (pixnum == 11089) then
-!      if (pixnum == 57) then
-!         print *, 'mixmat', mixmat
-!         print *, 'invN', invN(:, pixnum)
-!      end if
       do i = 1, numband
          mixmat_invn(i, :) = mixmat(i, :) * invN(i, pixnum)
       end do
-!      if (pixnum == 57) then
-!         print *, 'mixmat_invn', mixmat_invn
-!      end if
       Minv = matmul(transpose(mixmat_invn), mixmat)
-!      if (pixnum == 57) then
-!         print *, 'pix', pixnum
-!         print *, 'par', par
-!         do i = 1, num_components
-!            print *, 'currpar_region', region(pixel_curr_region(pixnum, i), i)%param
-!         end do
-!         print *, 'Minv', Minv
-!      end if
-!      call ludcmp(MinvLU, num_components, num_components, indx, det)
-!      call ludcmp(MinvLU, indx, det)
       MinvLU = Minv
       call choldc(MinvLU, diag)
       if (all(diag == 0)) then
@@ -1311,63 +852,14 @@ contains
       do j = 1, num_components
          det = det * diag(j) ** 2
       end do
-!      det = 1 / det
-!      det = sqrt(det)
-
-!      if (pixnum == 57) then
-!         print *, 'detbefore', det
-!      end if
-!      do j = 1, num_components
-!         det = det * MinvLU(j, j)
-!      end do
-!      det = 1 / det
-!      det = sqrt(det)
-!      M = inv(Minv)
-!      if (pixnum == 57) then
-!         print *, 'MinvLU' 
-!         do i = 1, num_components
-!            do j = 1, num_components
-!               print *, MinvLU(j, i)
-!            end do
-!         end do
-!         print *, 'diag', diag
-!         print *, 'indx', indx
-!         print *, 'det', det
-!         print *, 'logdet', log(det)
-!         print *, 'a2t', a2t
-!      end if
       do i = 1, numband
          dat_invn(i) = dat(i, pixnum) * invN(i, pixnum)
       end do
-!      if (pixnum == 57) then
-!         print *, 'dat_invn', dat_invn
-!      end if
       x = matmul(transpose(mixmat), dat_invn)
       b = x
-!      call lubksb(MinvLU, num_components, num_components, indx, b)
-!      call lubksb(MinvLU, indx, b)
       !Solve Minvb = x for b
-!      if (pixnum == 57) then
-!         print *, 'xbefore', x
-!      end if
       call cholsl(MinvLU, diag, x, b)
-!      xm = matmul(M, matmul(transpose(mixmat), dat_invn))
-!      sqrtdetM = 1.d0
-!      do j = 1, num_components
-!         sqrtdetM = sqrtdetM * M(j, j)
-!      end do
-!      sqrtdetM = sqrt(sqrtdetM)
-!      if (pixnum == 57) then
-!         print *, 'dat', dat(:, pixnum)
-!         print *, 'x', x
-!         print *, 'b', b
-!         print *, 'dot', dot_product(x, b)
-!      end if
       get_single_pixel_chisq_singlepar = log(det) - dot_product(x, b)
-!      if (pixnum == 57) then
-!         print *, 'par', par
-!         print *, 'chisq_singlepar', get_single_pixel_chisq_singlepar
-!      end if
 
    end function get_single_pixel_chisq_singlepar
 
@@ -1405,7 +897,6 @@ contains
       implicit none
       integer(i4b), dimension(:, 0:), intent(inout)   :: pixlist
 
-!      integer(i4b), dimension(0:npix-1)      :: pixlist_temp
       integer(i4b)      :: i, j, temp, currind, currnumpix
 
       do j = 0, npix-1
@@ -1548,11 +1039,6 @@ contains
       do i = 1, nsteps + 1
          write(unit, *) currx(i), res(i)
       end do
-!      do i = 1, nsteps + 1
-!         res = func(currx, f_state, aux_dp)
-!         write(unit, *) currx, res
-!         currx = currx + dx
-!      end do
       close(unit)
 
    end subroutine output_likelihood_dp
@@ -1585,14 +1071,6 @@ contains
 
       if (mode == 1) then
          !Single pixel-likelihood
-!         call minimize_brent_savevals(parlow, parhigh, maxpoint, chisqmin, & 
-!            & get_single_pixel_chisq_singlepar, state, parvals, lnLvals, & 
-!            & currsize)
-!         !We start by checking if the upper and lower priors are actually
-!         !max-like points. In that case, we won't call minimize_brent.
-!         dumchisq = get_single_pixel_chisq_singlepar(prior_low(component), state)
-!         dumchisq2 = get_single_pixel_chisq_singlepar(prior_low(component) + 1d-4)
-         
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_single_pixel_chisq_singlepar, state)
 
@@ -1612,7 +1090,6 @@ contains
             call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
             delta = 2.d0 * delta
             lnL = get_single_pixel_like_singlepar(maxpoint - delta, state, lnL0)
-!            call add_to_vals(maxpoint-delta, lnL, parvals, lnLvals, currsize)
          end do
          int_low = maxpoint - delta
          if (int_low < prior_low(component)) then
@@ -1646,8 +1123,6 @@ contains
 
       else if (mode == 2) then
          !Region-likelihood
-!         call minimize_brent_savevals(parlow, parhigh, maxpoint, chisqmin, & 
-!            & get_region_chisq_singlepar, state, parvals, lnLvals, currsize)
          call minimize_brent(parlow, parhigh, maxpoint, chisqmin, & 
             & get_region_chisq_singlepar, state)
          print *, 'brentres_region', maxpoint
@@ -1705,159 +1180,6 @@ contains
       print *, 'lnl0', lnL0
       print *, 'loginthighintlow', log(int_high - int_low)
       intres = log(intres) + lnL0 - log(int_high - int_low)
-!      get_pixel_marginalised_likelihood = log(res) + lnL0 - log(int_high - int_low)
    end subroutine get_maxpoint_and_splinedint
-
-   !OLD ROUTINES: These are for when we don't do marginalised sampling
-
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !   ###  #    ###    ###   ###  #   # ##### # #   # #####  ####  !
-   !  #   # #    #  #   #  # #   # #   #   #   # ##  # #     #      !
-   !  #   # #    #  #   ###  #   # #   #   #   # # # # ####   ###   ! 
-   !  #   # #    #  #   #  # #   # #   #   #   # #  ## #         #  !
-   !   ###  #### ###    #  #  ###   ###    #   # #   # ##### ####   !
-   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-   !MENTAL NOTE: If we want to sample the number of regions as well, there must
-   !be some kind of 'dimensional correction factor' included. Ask Jeff about
-   !this!
-!   subroutine sample_regions
-!      implicit none
-!
-!      integer(i4b)      :: i, j, k
-!      integer(i4b)      :: reg_propose, curr_reg
-!      real(dp)          :: propcontribution, lnL_prop
-!      logical(lgt)      :: accept
-!
-!      !'Pixel step' - we loop through all pixels, allowing them to switch to
-!      !a neighbouring region
-!      do i = 1, num_components
-!         do j = 0, npix - 1
-!            !If this is the last pixel in its region, we cannot allow a change
-!            if (region(pixel_curr_region(j, i), i)%num_pix == 1) continue
-!            !Check if it has neighbours in another region
-!            do k = 1, numneighbours(j)
-!               if (pixel_curr_region(j, i) /= pixel_curr_region(neighbours(k, j), i)) then
-!                  reg_propose = pixel_curr_region(neighbours(k, j), i)
-!                  curr_reg = pixel_curr_region(j, i)
-!                  pixel_curr_region(j, i) = reg_propose
-!!                  call update_mixing_matrix(i, j)
-!                  propcontribution = get_pixel_contribution(j)
-!                  lnL_prop = currlnL - lnLmap(j) + propcontribution
-!                  accept = exp(lnL_prop - currlnL) > rand_uni(rng_handle)
-!                  if (accept) then
-!                     currlnL = lnL_prop
-!                     lnLmap(j) = propcontribution
-!                     region(pixel_curr_region(j, i))%num_pixel = & 
-!                        & region(pixel_curr_region(j, i))%num_pixel - 1
-!                     region(pixel_curr_region(neighbours(k, j), i), i)%num_pixel = & 
-!                        & region(pixel_curr_region(neighbours(k, j), i), i)%num_pixel + 1
-!                  else
-!                     pixel_curr_region(j, i) = curr_reg
-!                  end if
-!                  exit
-!               end if
-!            end do
-!         end do
-!      end do
-!   end subroutine sample_regions
-!
-!   function get_pixel_contribution(pixnum) result(contribution)
-!      implicit none
-!
-!      integer(i4b), intent(in)  :: pixnum
-!      real(dp)          :: contribution
-!
-!      !mixmat_curr = get_mixing_matrix(pixnum)
-!!      mixmat_curr = mixmat(:, :, pixnum)
-!!      call update_mixing_matrix(pixnum)
-!!      Minv = matmul(matmul(transpose(mixmat), invN(:, pixnum)), mixmat)
-!!      M = inv(Minv)
-!!      xm = matmul(matmul(matmul(transpose(dat(:, pixnum)), invN(:, pixnum)), mixmat), M)
-!!      sqrtdetM = 1
-!!      do j = 1, num_components
-!!         sqrtdetM = sqrtdetM * M(j, j)
-!!      end do
-!!      sqrtdetM = sqrt(sqrtdetM)
-!!      contribution = log(sqrtdetM) + 0.5 * matmul(matmul(transpose(xm), Minv), xm)
-!
-!   end function get_pixel_contribution
-!
-!   subroutine update_mixing_matrix(pixnum)
-!      implicit none
-!
-!      integer(i4b), intent(in)  :: pixnum
-!
-!      integer(i4b)      :: i
-!      type(region_data)         :: curregion
-!
-!      do i = 1, num_components
-!         do j = 1, numband
-!            curregion = region(pixel_curr_region(i, pixnum), i)
-!            !Fill in with specific behaviors
-!            if (behavior(i) == 1) then
-!               !Power-law
-!               mixmat(j, i) = a2t(j) * (freq(j) / ref_freq(i)) ** curregion%param
-!            end if
-!         end do
-!      end do
-!
-!   end subroutine update_mixing_matrix
-!
-!   subroutine calculate_region_contribution(component_num, region_num, contribution, old_contribution, lnLmap)
-!      implicit none
-!
-!      integer(i4b), intent(in)          :: component_num, region_num
-!      real(dp), intent(out)             :: old_contribution
-!      real(dp), intent(out)             :: contribution
-!      real(dp), dimension(0:, 0:), intent(inout)  :: lnLmap
-!
-!      integer(i4b)      :: i, j, k
-!
-!      contribution = 0
-!      old_contribution = 0
-!      do i = 0, npix - 1
-!         if (pixel_curr_region(i, component_num) /= region_num) continue
-!         old_contribution = old_contribution + lnLmap(i)
-!         lnLmap(i) = get_pixel_contribution(i)
-!         contribution = contribution + lnLmap(i)
-!      end do
-!
-!   end subroutine calculate_region_contribution
-!
-!   subroutine sample_parameters
-!      implicit none
-!      
-!      integer(i4b)      :: i, j
-!      real(dp)          :: currparam, prop_param, propcontribution
-!      real(dp)          :: currcontribution, lnL_prop
-!      logical(lgt)      :: accept
-!
-!      do i = 1, num_components
-!         do j = 1, num_init_reg(i)
-!            !Add as needed
-!            if (behavior(i) == 1) then
-!               !We only sample the spectral index for this behavior
-!!               currparam = region(j, i)%parameters(2)
-!               currparam = region(j, i)%param
-!               prop_param = region(j, i)%param + region(j, i)%dispersion
-!               region(j, i)%param = prop_param
-!               !Loop through all pixels and recalculate those that are affected
-!               !by the new parameters
-!               lnLmap_prop = lnLmap
-!               call calculate_region_contribution(i, j, propcontribution, currcontribution, lnLmap_prop)
-!               lnL_prop = currlnL - currcontribution + propcontribution
-!               accept = exp(lnL_prop - currlnL) > rand_uni(rng_handle)
-!               if (accept) then
-!                  lnLmap = lnLmap_prop
-!                  currlnL = lnL_prop
-!               else
-!                  region(j, i)%param = currparam
-!               end if
-!            end if
-!         end do
-!      end do
-!
-!   end subroutine sample_parameters
 
 end module region_mod
