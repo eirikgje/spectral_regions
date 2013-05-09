@@ -8,6 +8,10 @@ module region_mod
    use udgrade_nr
    implicit none
 
+   private
+
+   public initialize_region_mod, sample_marginalised_regions, output_maps, get_single_pixel_chisq_singlepar, get_region_like, get_region_like_singlepar, get_scrambled_pixlist
+
    interface output_likelihood
       module procedure output_likelihood_nodp, output_likelihood_dp
    end interface output_likelihood
