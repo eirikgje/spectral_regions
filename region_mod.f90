@@ -10,7 +10,7 @@ module region_mod
 
    private
 
-   public initialize_region_mod, sample_marginalised_regions, output_maps, get_single_pixel_chisq_singlepar, get_region_like, get_region_like_singlepar, get_scrambled_pixlist
+   public initialize_region_mod, sample_marginalised_regions, output_maps, get_single_pixel_chisq_singlepar, get_region_like, get_region_like_singlepar, get_region_like_singlepar_noomp, get_scrambled_pixlist
 
    interface output_likelihood
       module procedure output_likelihood_nodp, output_likelihood_dp
@@ -697,6 +697,42 @@ contains
       get_region_like_singlepar = exp(-0.5d0 * get_region_like_singlepar - offset)
 
    end function get_region_like_singlepar
+
+   function get_region_like_singlepar_noomp(par, region_state, offset)
+      implicit none
+      real(dp)          :: get_region_like_singlepar_noomp
+      real(dp), intent(in)      :: par
+      integer(i4b), dimension(:), intent(in) :: region_state
+      real(dp), intent(in)      :: offset
+
+      real(dp)  :: temp
+      integer(i4b), dimension(2)        :: pix_state
+      integer(i4b)      :: region_num, component, pix_sub, pix_add
+      integer(i4b)      :: i, j
+
+      region_num = region_state(1)
+      component = region_state(2)
+      pix_sub = region_state(3)
+      pix_add = region_state(4)
+
+      get_region_like_singlepar_noomp = 0
+
+!      print *, 'singlepar'
+
+      pix_state(2) = component
+
+      do i = 0, npix - 1
+         if ((pixel_curr_region(i, component) == region_num .and. .not. & 
+            & i == pix_sub) .or. i == pix_add) then
+            pix_state(1) = i
+            get_region_like_singlepar_noomp = get_region_like_singlepar_noomp + get_single_pixel_chisq_singlepar(par, pix_state)
+         end if
+      end do
+
+      get_region_like_singlepar_noomp = exp(-0.5d0 * get_region_like_singlepar_noomp - offset)
+
+   end function get_region_like_singlepar_noomp
+
 
    function get_region_chisq(par, region_state)
       implicit none

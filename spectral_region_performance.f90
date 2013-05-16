@@ -49,7 +49,14 @@ program spectral_region_performance
             dum = get_region_like_singlepar(par, state, 0.d0)
          end do
          call cpu_time(t2)
-      case ("region_multipar")
+      case ("region_singlepar_noomp")
+         call cpu_time(t1)
+         do i = 1, test_iterations
+            state(1) = mod(i, num_init_reg)
+            dum = get_region_like_singlepar_noomp(par, state, 0.d0)
+         end do
+         call cpu_time(t2)
+     case ("region_multipar")
          call cpu_time(t1)
          do i = 1, test_iterations
             state(1) = mod(i, num_init_reg)
