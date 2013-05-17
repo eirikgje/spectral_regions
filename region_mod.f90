@@ -616,6 +616,7 @@ contains
       integer(i4b), dimension(:), intent(in) :: region_state
       real(dp), intent(in)      :: offset
 
+      real(dp), dimension(size(par))    :: get_region_like_private
 !      real(dp), dimension(size(par))  :: temp
       integer(i4b), dimension(2)        :: pix_state
       integer(i4b)      :: region_num, component, pix_sub, pix_add
@@ -630,7 +631,8 @@ contains
       get_region_like = 0
 
 
-      !$OMP PARALLEL PRIVATE(i, pix_state)
+      !$OMP PARALLEL PRIVATE(i, pix_state, get_region_like_private)
+      get_region_like_private = 0
       pix_state(2) = component
 
       !$OMP DO SCHEDULE(GUIDED)
@@ -638,14 +640,17 @@ contains
          if ((pixel_curr_region(i, component) == region_num .and. .not. & 
             & i == pix_sub) .or. i == pix_add) then
             pix_state(1) = i
-            !$OMP CRITICAL
-            get_region_like = get_region_like + get_single_pixel_chisq(par, pix_state)
-            !$OMP END CRITICAL
+            get_region_like_private = get_region_like_private + get_single_pixel_chisq(par, pix_state)
 !            temp = get_single_pixel_chisq(par, pix_state)
 !            get_region_like = get_region_like - 0.5d0 * temp
          end if
       end do
       !$OMP END DO
+
+      !$OMP CRITICAL
+      get_region_like = get_region_like + get_region_like_private
+
+      !$OMP END CRITICAL
 
       !$OMP END PARALLEL
 
@@ -663,6 +668,7 @@ contains
       real(dp), intent(in)      :: offset
 
       real(dp)  :: temp
+      real(dp)  :: get_region_like_singlepar_private
       integer(i4b), dimension(2)        :: pix_state
       integer(i4b)      :: region_num, component, pix_sub, pix_add
       integer(i4b)      :: i, j
@@ -676,21 +682,24 @@ contains
 
 !      print *, 'singlepar'
 
-      !$OMP PARALLEL PRIVATE(i, pix_state)
+      !$OMP PARALLEL PRIVATE(i, pix_state, get_region_like_singlepar_private)
       pix_state(2) = component
+      get_region_like_singlepar_private = 0
 
       !$OMP DO SCHEDULE(GUIDED)
       do i = 0, npix - 1
          if ((pixel_curr_region(i, component) == region_num .and. .not. & 
             & i == pix_sub) .or. i == pix_add) then
             pix_state(1) = i
-            !$OMP CRITICAL
-            get_region_like_singlepar = get_region_like_singlepar + get_single_pixel_chisq_singlepar(par, pix_state)
-            !$OMP END CRITICAL
+            get_region_like_singlepar_private = get_region_like_singlepar_private + get_single_pixel_chisq_singlepar(par, pix_state)
          end if
       end do
+      !$OMP END DO
 
-      !$OMP END DO NOWAIT
+      !$OMP CRITICAL
+      get_region_like_singlepar = get_region_like_singlepar + get_region_like_singlepar_private
+      !$OMP END CRITICAL
+
 
       !$OMP END PARALLEL
 
