@@ -238,10 +238,10 @@ contains
       !scramble the list of pixels, and we do the inner loop over components
       call get_scrambled_pixlist(pixlist_scramble)
       do j = 0, npix-1
-         print *, 'count', j
+!         print *, 'count', j
          do i = 1, num_components
             pix = pixlist_scramble(i, j)
-            print *, 'curr_pixel', pix
+!            print *, 'curr_pixel', pix
             neighbour_region = -1
             nneighbour_region = 0
             !Find all neighbouring regions
@@ -253,18 +253,15 @@ contains
                      neighbour_region(nneighbour_region) = & 
                         & pixel_curr_region(neighbours(k, pix), i)
                   else
-                     do l = 1, nneighbour_region
-                        if (pixel_curr_region(neighbours(k, pix), i) /= & 
-                           & neighbour_region(l)) then
-                           !Means the pixel is bordering a neighbouring region, and
-                           !that this region is distinct from other neighbouring
-                           !regions already added to the list (in case a pixel
-                           !borders several regions)
-                           nneighbour_region = nneighbour_region + 1
-                           neighbour_region(nneighbour_region) = & 
-                              & pixel_curr_region(neighbours(k, pix), i)
-                        end if
-                     end do
+                     if (.not. any(pixel_curr_region(neighbours(k, pix), i) & 
+                        & == neighbour_region(:))) then
+                        !Means that the pixel is bordering a neighbouring
+                        !region, and that this region is distinct from other
+                        !neighbouring regions already added to the list
+                        nneighbour_region = nneighbour_region + 1
+                        neighbour_region(nneighbour_region) = &
+                           & pixel_curr_region(neighbours(k, pix), i)
+                     end if
                   end if
                end if
             end do
@@ -326,15 +323,15 @@ contains
       integer(i4b)      :: reg_curr, reg_prop, i, j
       type(region_data), allocatable, dimension(:, :)      :: region_temp
 
-      print *, 'formnew'
+!      print *, 'formnew'
       reg_curr = pixel_curr_region(pixel, component)
-      print *, 'reg_curr', reg_curr
+!      print *, 'reg_curr', reg_curr
       !If last pixel in region, do nothing
       if (region(reg_curr, component)%num_pix == 1) then 
          if (count(pixel_curr_region(:, component) == reg_curr) > 1) then
             print *, 'count - something is wrong', count(pixel_curr_region(:, component) == reg_curr)
          end if
-         print *, 'lastpix'
+!         print *, 'lastpix'
          return
       end if
 
@@ -357,7 +354,7 @@ contains
       !we have a prior on the number of regions
       accept = exp(lnLprop - lnLcurr - lambda) > rand_uni(rng_handle)
       if (accept) then
-         print *, 'accept'
+!         print *, 'accept'
          region(reg_curr, component)%num_pix = & 
             & region(reg_curr, component)%num_pix - 1
          !Update bestfit-parameter and loglike
@@ -403,7 +400,7 @@ contains
          region(reg_prop, component)%currlnL = lnLprop_new
          region(reg_prop, component)%param_bounds = limits_new
       else
-         print *, 'reject'
+!         print *, 'reject'
          !Just update the best-fit parameter and log-likelihood, even though
          !they shouldn't have changed much
          region(reg_curr, component)%param = currparam_maxlike
@@ -430,7 +427,7 @@ contains
 
       !This looks a bit excessive, but in order to store the log-likelihood for
       !each region we need to save each part of the likelihood
-      print *, 'switch'
+!      print *, 'switch'
       reg_curr = pixel_curr_region(pixel, component)
       if (region(reg_curr, component)%first_eval) then
          lnLcurr_curregion = & 
@@ -468,7 +465,7 @@ contains
          !term
          accept = exp(lnLprop - lnLcurr + lambda) > rand_uni(rng_handle)
          if (accept) then
-            print *, 'accept'
+!            print *, 'accept'
             !Add the region number of the region that is about to disappear to
             !the stack of available region numbers
             call push(reg_curr, available_region_numbers(component))
@@ -484,7 +481,7 @@ contains
                end if
             end do
          else
-            print *, 'reject'
+!            print *, 'reject'
             region(reg_curr, component)%param = currparam_curregion
             region(reg_curr, component)%currlnL = lnLcurr_curregion
             region(reg_curr, component)%param_bounds = currlimits_curregion
@@ -496,7 +493,7 @@ contains
          !No change in the number of regions
          accept = exp(lnLprop - lnLcurr)
          if (accept) then
-            print *, 'accept'
+!            print *, 'accept'
             region(reg_curr, component)%num_pix = & 
                & region(reg_curr, component)%num_pix - 1
             region(reg_prop, component)%num_pix = & 
@@ -509,7 +506,7 @@ contains
             region(reg_prop, component)%currlnL = lnLprop_propregion
             region(reg_prop, component)%param_bounds = proplimits_propregion
          else
-            print *, 'reject'
+!            print *, 'reject'
             region(reg_curr, component)%param = currparam_curregion
             region(reg_curr, component)%currlnL = lnLcurr_curregion
             region(reg_curr, component)%param_bounds = currlimits_curregion

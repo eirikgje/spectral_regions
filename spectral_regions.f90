@@ -12,7 +12,7 @@ program spectral_regions
    integer(i4b) :: unit
    integer(i4b) :: mcmc_steps
    integer(i4b) :: i
-   real(dp)     :: t1, t2
+   real(dp)     :: t1, t2, t1_int, t2_int
 
    unit = getlun()
    call getarg(1, paramfile)
@@ -21,12 +21,15 @@ program spectral_regions
 
    call cpu_time(t1)
    do i = 1, mcmc_steps
+      call cpu_time(t1_int)
       print *, 'mcmc_step : ', i
       call sample_marginalised_regions()
       call output_maps(i)
+      call cpu_time(t2_int)
+      print *, "Time for this step: ", t2_int - t1_int
    end do
    call cpu_time(t2)
-   print *, 'time spent:'
+   print *, 'Total time spent:'
    print *, t2-t1
 
 end program spectral_regions
