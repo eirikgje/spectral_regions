@@ -31,7 +31,7 @@ module region_mod
    real(dp), allocatable, dimension(:)                  :: a2t
    real(dp), allocatable, dimension(:)                  :: prior_low, prior_high
    real(dp), allocatable, dimension(:)                  :: freq
-   real(dp), allocatable, dimension(:, :)               :: dat, invN
+   real(dp), allocatable, dimension(:, :)               :: invN, dat_invn
    real(dp), allocatable, dimension(:, :)       :: mixmat_base
    real(dp), allocatable, dimension(:)       :: ref_freq, initdisp, initpar
    integer(i4b), allocatable, dimension(:)   :: behavior
@@ -63,6 +63,7 @@ contains
       character(len=512), allocatable, dimension(:)     :: mapfname, invnfname
       real(dp), allocatable, dimension(:, :)    :: map_temp
       real(dp), dimension(3)                    :: pixvec
+      real(dp), allocatable, dimension(:, :)    :: dat 
 
       call get_parameter(unit, paramfile, 'SEED', par_int=seed)
       call get_parameter(unit, paramfile, 'NSIDE', par_int=nside)
@@ -122,6 +123,7 @@ contains
 
       allocate(dat(numband, 0:npix-1))
       allocate(invN(numband, 0:npix-1))
+      allocate(dat_invn(numband, 0:npix-1))
       do i = 1, numband
          call read_map(map_temp, ordering, trim(mapfname(i)))
          if (ordering == 1) then
@@ -136,6 +138,8 @@ contains
          invN(i, :) = map_temp(:, 1)
          deallocate(map_temp)
       end do
+      dat_invn = dat * invN
+      deallocate(dat)
 
       !Initialize regions
       allocate(pixel_curr_region(0:npix-1, num_components))
@@ -839,7 +843,6 @@ contains
       integer(i4b)      :: pixnum, component
       real(dp), dimension(numband, num_components)      :: mixmat, mixmat_invn
       real(dp), dimension(num_components, num_components)       :: M, Minv, MinvLU
-      real(dp), dimension(numband)      :: dat_invn
       real(dp)      :: lndet
       integer(i4b), dimension(num_components)   :: indx
       real(dp), dimension(num_components)       :: x, b, diag
@@ -850,9 +853,6 @@ contains
       where(par < prior_low(component) .or. par > prior_high(component))
          get_single_pixel_chisq = 1.d30
       end where
-      do i = 1, numband
-         dat_invn(i) = dat(i, pixnum) * invN(i, pixnum)
-      end do
       do k = 1, size(par)
          call calc_mixing_matrix(par(k), pixnum, component, mixmat)
          do i = 1, numband
@@ -870,7 +870,7 @@ contains
             lndet = lndet + log(diag(j))
          end do
          lndet = 2.d0*lndet
-         x = matmul(transpose(mixmat), dat_invn)
+         x = matmul(transpose(mixmat), dat_invn(:, pixnum))
          b = x
       !Solve Minvb = x for b
          call cholsl(MinvLU, diag, x, b)
@@ -891,7 +891,6 @@ contains
       integer(i4b)      :: pixnum, component
       real(dp), dimension(numband, num_components)      :: mixmat, mixmat_invn
       real(dp), dimension(num_components, num_components)       :: M, Minv, MinvLU
-      real(dp), dimension(numband)      :: dat_invn
       real(dp)      :: det
       integer(i4b), dimension(num_components)   :: indx
       real(dp), dimension(num_components)       :: x, b
@@ -920,10 +919,7 @@ contains
       do j = 1, num_components
          det = det * diag(j) ** 2
       end do
-      do i = 1, numband
-         dat_invn(i) = dat(i, pixnum) * invN(i, pixnum)
-      end do
-      x = matmul(transpose(mixmat), dat_invn)
+      x = matmul(transpose(mixmat), dat_invn(:, pixnum))
       b = x
       !Solve Minvb = x for b
       call cholsl(MinvLU, diag, x, b)
