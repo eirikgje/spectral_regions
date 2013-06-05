@@ -642,8 +642,6 @@ contains
             & i == pix_sub) .or. i == pix_add) then
             pix_state(1) = i
             get_region_like_private = get_region_like_private + get_single_pixel_chisq(par, pix_state)
-!            temp = get_single_pixel_chisq(par, pix_state)
-!            get_region_like = get_region_like - 0.5d0 * temp
          end if
       end do
       !$OMP END DO
@@ -727,8 +725,6 @@ contains
 
       get_region_like_singlepar_noomp = 0
 
-!      print *, 'singlepar'
-
       pix_state(2) = component
 
       do i = 0, npix - 1
@@ -750,6 +746,7 @@ contains
       real(dp), dimension(size(par))         :: get_region_chisq
       integer(i4b), dimension(:), intent(in) :: region_state
 
+      real(dp), dimension(size(par))    :: get_region_chisq_private
       integer(i4b), dimension(2)        :: pix_state
       integer(i4b)      :: region_num, component, pix_sub, pix_add
       integer(i4b)      :: i, j
@@ -759,21 +756,31 @@ contains
       pix_sub = region_state(3)
       pix_add = region_state(4)
 
-      pix_state(2) = component
-
       get_region_chisq = 0
 
+      !$OMP PARALLEL PRIVATE(i, pix_state, get_region_chisq_private)
+      pix_state(2) = component
+      get_region_chisq_private = 0
+
+      !$OMP DO SCHEDULE(GUIDED)
       do i = 0, npix - 1
          if (pixel_curr_region(i, component) == region_num .and. .not. & 
             & i == pix_sub) then
             pix_state(1) = i
-            get_region_chisq = get_region_chisq + get_single_pixel_chisq(par, pix_state)
+            get_region_chisq_private = get_region_chisq_private + get_single_pixel_chisq(par, pix_state)
          else if (i == pix_add) then
             pix_state(1) = i
-            get_region_chisq = get_region_chisq + get_single_pixel_chisq(par, pix_state)
+            get_region_chisq_private = get_region_chisq_private + get_single_pixel_chisq(par, pix_state)
          end if
       end do
+      !$OMP END DO
 
+      !$OMP CRITICAL
+
+      get_region_chisq = get_region_chisq + get_region_chisq_private
+      !$OMP END CRITICAL
+
+      !$OMP END PARALLEL
    end function get_region_chisq
 
    function get_region_chisq_singlepar(par, region_state)
@@ -782,6 +789,7 @@ contains
       real(dp), intent(in)      :: par
       integer(i4b), dimension(:), intent(in) :: region_state
 
+      real(dp)          :: get_region_chisq_singlepar_private
       integer(i4b), dimension(2)        :: pix_state
       real(dp)          :: chisq_tot
       integer(i4b)      :: region_num, component, pix_sub, pix_add
@@ -794,18 +802,28 @@ contains
 
       get_region_chisq_singlepar = 0
 
+      !$OMP PARALLEL PRIVATE(i, pix_state, get_region_chisq_singlepar_private)
       pix_state(2) = component
+      get_region_chisq_singlepar_private = 0
 
+      !$OMP DO SCHEDULE(GUIDED)
       do i = 0, npix - 1
          if (pixel_curr_region(i, component) == region_num .and. .not. & 
             & i == pix_sub) then
             pix_state(1) = i
-            get_region_chisq_singlepar = get_region_chisq_singlepar + get_single_pixel_chisq_singlepar(par, pix_state)
+            get_region_chisq_singlepar_private = get_region_chisq_singlepar_private + get_single_pixel_chisq_singlepar(par, pix_state)
          else if (i == pix_add) then
             pix_state(1) = i
-            get_region_chisq_singlepar = get_region_chisq_singlepar + get_single_pixel_chisq_singlepar(par, pix_state)
+            get_region_chisq_singlepar_private = get_region_chisq_singlepar_private + get_single_pixel_chisq_singlepar(par, pix_state)
          end if
       end do
+      !$OMP END DO
+      
+      !$OMP CRITICAL
+      get_region_chisq_singlepar = get_region_chisq_singlepar + get_region_chisq_singlepar_private 
+      !$OMP END CRITICAL
+
+      !$OMP END PARALLEL
 
    end function get_region_chisq_singlepar
 
