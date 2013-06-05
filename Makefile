@@ -1,8 +1,12 @@
 
 #OBJS = StackObject.o nrutil.o optimization_mod.o utils.o quiet_hdf_mod.o quiet_mapfile_mod.o region_mod.o
-OBJS = StackObject.o utils.o nrutil.o nr_mod.o optimization_mod.o quiet_hdf_mod.o quiet_mapfile_mod.o region_mod.o
+COMMONOBJS = StackObject.o utils.o nrutil.o nr_mod.o optimization_mod.o quiet_hdf_mod.o quiet_mapfile_mod.o 
+TIMEDOBJS = $(COMMONOBJS) region_mod_timed.o
+MAINOBJS = $(COMMONOBJS) region_mod.o
+PERFORMANCEOBJS = $(COMMONOBJS) region_mod.o
 
-all : spectral_regions spectral_region_performance
+
+all : spectral_regions spectral_region_performance spectral_regions_timed
 
 C_LIBDIR      = /mn/stornext/u2/eirikgje/.local/lib
 
@@ -13,17 +17,22 @@ F90FLAGS = -O3 -vec_report0 -assume byterecl -openmp
 FFLAGS := -I$(HOME)/.local/include
 LDFLAGS =-L$(C_LIBDIR) -lhealpix -lcfitsio -lm -lhdf5_fortran -lhdf5 -openmp
 
-spectral_regions  : $(OBJS) spectral_regions.o
-	$(FC) -o spectral_regions spectral_regions.o $(OBJS) $(LDFLAGS)
+spectral_regions  : $(MAINOBJS) spectral_regions.o
+	$(FC) -o spectral_regions spectral_regions.o $(MAINOBJS) $(LDFLAGS)
 
-spectral_region_performance : $(OBJS) spectral_region_performance.o
-	$(FC) -o spectral_region_performance spectral_region_performance.o $(OBJS) $(LDFLAGS)
+spectral_region_performance : $(PERFORMANCEOBJS) spectral_region_performance.o
+	$(FC) -o spectral_region_performance spectral_region_performance.o $(PERFORMANCEOBJS) $(LDFLAGS)
+
+spectral_regions_timed  : $(TIMEDOBJS) spectral_regions_timed.o
+	$(FC) -o spectral_regions_timed spectral_regions_timed.o $(TIMEDOBJS) $(LDFLAGS)
 
 quiet_mapfile_mod.o: quiet_hdf_mod.o
 
-spectral_regions.o: $(OBJS)
+spectral_regions.o: $(MAINOBJS)
 
-spectral_region_performance.o: $(OBJS)
+spectral_region_performance.o: $(PERFORMANCEOBJS)
+
+spectral_regions_timed.o: $(TIMEDOBJS)
 
 %.o : %.f90
 	$(FC) $(F90FLAGS) $(FFLAGS) -c $<
@@ -31,4 +40,3 @@ spectral_region_performance.o: $(OBJS)
 .PHONY: clean
 clean: 
 	rm -f *.o
-
