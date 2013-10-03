@@ -4,9 +4,10 @@ COMMONOBJS = StackObject.o utils.o nrutil.o nr_mod.o optimization_mod.o quiet_hd
 TIMEDOBJS = $(COMMONOBJS) region_mod_timed.o
 MAINOBJS = $(COMMONOBJS) region_mod.o
 PERFORMANCEOBJS = $(COMMONOBJS) region_mod.o
+BFOBJS = utils.o nrutil.o nr_mod.o quiet_hdf_mod.o quiet_mapfile_mod.o
 
 
-all : spectral_regions spectral_region_performance spectral_regions_timed
+all : spectral_regions spectral_region_performance spectral_regions_timed find_bestfit_si
 
 C_LIBDIR      = /mn/stornext/u2/eirikgje/.local/lib
 
@@ -26,6 +27,9 @@ spectral_region_performance : $(PERFORMANCEOBJS) spectral_region_performance.o
 spectral_regions_timed  : $(TIMEDOBJS) spectral_regions_timed.o
 	$(FC) -o spectral_regions_timed spectral_regions_timed.o $(TIMEDOBJS) $(LDFLAGS)
 
+find_bestfit_si	: $(BFOBJS) find_bestfit_si.o
+	$(FC) -o find_bestfit find_bestfit_si.o $(BFOBJS) $(LDFLAGS)
+
 quiet_mapfile_mod.o: quiet_hdf_mod.o
 
 spectral_regions.o: $(MAINOBJS)
@@ -33,6 +37,9 @@ spectral_regions.o: $(MAINOBJS)
 spectral_region_performance.o: $(PERFORMANCEOBJS)
 
 spectral_regions_timed.o: $(TIMEDOBJS)
+
+find_bestfit_si.o: $(BFOBJS)
+	$(FC) $(F90FLAGS) $(FFLAGS) -c find_bestfit_si/find_bestfit_si.f90
 
 %.o : %.f90
 	$(FC) $(F90FLAGS) $(FFLAGS) -c $<
