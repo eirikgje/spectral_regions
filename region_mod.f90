@@ -35,6 +35,7 @@ module region_mod
    real(dp), allocatable, dimension(:, :)       :: mixmat_base
    real(dp), allocatable, dimension(:)       :: ref_freq, initdisp, initpar
    integer(i4b), allocatable, dimension(:)   :: behavior
+   character(len=512)   :: output_dir
 
    real(dp)     :: lambda
    type(planck_rng)     :: rng_handle
@@ -71,6 +72,7 @@ contains
          & par_int=num_components)
       call get_parameter(unit, paramfile, 'NUMBAND', par_int=numband)
       call get_parameter(unit, paramfile, 'LAMBDA_PRIOR', par_dp=lambda)
+      call get_parameter(unit, paramfile, 'OUTPUT_DIR', par_string=output_dir)
       allocate(freq(numband))
       allocate(mapfname(numband))
       allocate(invnfname(numband))
@@ -1031,7 +1033,7 @@ contains
          call int2string(i, itext)
          call int2string(iteration, ittext)
          call make_result_map(res_map, i)
-         fname='output_map_comp_' // itext // '_iter_' // ittext //  '.fits'
+         fname = trim(output_dir) // 'output_map_comp_' // itext // '_iter_' // ittext //  '.fits'
          call write_map(res_map, 2, trim(fname))
          deallocate(res_map)
       end do

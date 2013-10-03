@@ -19,6 +19,8 @@ program spectral_regions
    call get_parameter(unit, paramfile, 'NUM_MCMC_STEPS', par_int=mcmc_steps)
    call initialize_region_mod(unit, paramfile)
 
+   call output_maps(0)
+
    call cpu_time(t1)
    do i = 1, mcmc_steps
       call cpu_time(t1_int)
